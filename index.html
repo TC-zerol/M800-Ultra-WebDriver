@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多彩 M800 Ultra 网页驱动</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>🖱️ 多彩 M800 Ultra 网页驱动 <span class="badge green">阶段三 · 可用版</span></h1>
+  <p class="sub">WebHID 直连 DELUX Receiver (VID <code>0x320F</code> / PID <code>0x225B</code>) · 协议已逆向 · 无需安装任何软件</p>
+</header>
+
+<div id="env-warnings"></div>
+
+<main>
+  <!-- 连接面板 -->
+  <section class="card">
+    <h2>设备连接</h2>
+    <div class="row">
+      <button id="btn-connect" class="primary">连接接收器</button>
+      <button id="btn-disconnect" disabled>断开</button>
+      <span class="badge green" id="battery-badge" hidden>电量 --%</span>
+      <span class="badge" id="conn-badge">未连接</span>
+    </div>
+    <div id="device-status" class="status-box">未连接</div>
+    <p class="hint">浏览器弹出设备选择框时请选 <b>DELUX Receiver</b>。⚠️ 使用本页面时请<b>关闭官方驱动</b>，避免两边同时写配置。</p>
+  </section>
+
+  <!-- 状态总览 -->
+  <section class="card" id="card-status" hidden>
+    <h2>设备状态</h2>
+    <div class="grid2">
+      <div>🔋 电量：<b id="st-battery">--</b> <button id="btn-refresh-bat">刷新</button>
+        <label class="check"><input type="checkbox" id="chk-auto-bat" checked> 每3秒自动刷新（同官方驱动）</label></div>
+      <div>📡 当前回报率：<b id="st-rate">--</b></div>
+      <div>🎯 DPI 档位：<b id="st-dpi">--</b></div>
+      <div>🧾 固件信息：<span id="st-fw" class="mono">--</span> <button id="btn-fw">读取</button></div>
+      <div style="grid-column: 1 / -1;">
+        <div class="row" style="justify-content:space-between; margin: 4px 0 0;">
+          <span style="font-size:13px; color:var(--dim)">🔋 电量变化（近7天）</span>
+          <span class="hint" id="bat-chart-note"></span>
+        </div>
+        <canvas id="battery-chart" height="160"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- DPI 设置 + 报告率（仿官方布局） -->
+  <section class="card" id="card-dpi" hidden>
+    <h2>DPI设置</h2>
+    <div id="dpi-rows"></div>
+    <div class="row"><span id="dpi-msg"></span></div>
+    <p class="hint">拖动滑块、修改数值或勾选/取消档位后<b>自动保存</b>（写入并读回验证）。颜色块 = 该档位的指示灯颜色。取消勾选的档位会被鼠标 DPI 键跳过。</p>
+
+    <h2 style="margin-top:26px">USB报告率</h2>
+    <div class="row" id="rate-btns"></div>
+    <p class="hint">点击立即写入。官方驱动仅提供 125–1000Hz 四档（协议中 2=500Hz / 3=1000Hz 已抓包验证）。<span id="rate-msg"></span></p>
+  </section>
+
+  <!-- 其他设置（仿官方驱动，字段已实机逆向确认） -->
+  <section class="card" id="card-settings" hidden>
+    <h2>其他设置</h2>
+    <div class="settings-grid">
+      <span class="set-label">静默高度</span>
+      <div class="btn-group" id="lod-btns">
+        <button class="rate-btn" data-v="0">1MM</button>
+        <button class="rate-btn" data-v="1">2MM</button>
+      </div>
+      <span class="set-label">直线校准</span>
+      <div class="btn-group" id="linear-btns">
+        <button class="rate-btn" data-v="1">ON</button>
+        <button class="rate-btn" data-v="0">OFF</button>
+      </div>
+      <span class="set-label">移动同步</span>
+      <div class="btn-group" id="sync-btns">
+        <button class="rate-btn" data-v="1">ON</button>
+        <button class="rate-btn" data-v="0">OFF</button>
+      </div>
+      <span class="set-label">深度休眠</span>
+      <div class="btn-group" id="dsleep-btns">
+        <button class="rate-btn" data-v="1">ON</button>
+        <button class="rate-btn" data-v="0">OFF</button>
+      </div>
+      <span class="set-label">休眠设置</span>
+      <div>
+        <select id="sel-sleep">
+          <option value="180">3分钟</option>
+          <option value="240">4分钟</option>
+          <option value="300">5分钟</option>
+          <option value="600">10分钟</option>
+          <option value="900">15分钟</option>
+          <option value="1200">20分钟</option>
+        </select>
+      </div>
+      <span class="set-label">按键延时</span>
+      <div>
+        <select id="sel-keydelay">
+          <option value="2">2ms</option>
+          <option value="4">4ms</option>
+          <option value="6">6ms</option>
+          <option value="8">8ms</option>
+          <option value="10">10ms</option>
+        </select>
+      </div>
+    </div>
+    <div class="row"><span id="set-msg"></span></div>
+    <p class="hint">改动后<b>自动保存</b>（写入并读回验证）。全部字段均通过"官方驱动改设置 → 抓包对比"实机逆向确认。</p>
+  </section>
+
+  <!-- 高级 -->
+  <section class="card" id="card-adv" hidden>
+    <h2>高级（调试）</h2>
+    <div class="row">
+      <label>浅休眠计时(秒) <input id="inp-sleep" type="number" min="0" max="3600" style="width:80px"></label>
+      <button id="btn-write-sleep">写入</button>
+      <span id="sleep-msg"></span>
+    </div>
+    <p class="hint">配置块 0x30[20]，官方界面未暴露的低功耗计时（默认 60 秒）。常用休眠项请用上面的"其他设置"卡片。</p>
+  </section>
+
+  <!-- 实时监控 -->
+  <section class="card" id="card-monitor" hidden>
+    <h2>协议监控</h2>
+    <div class="row">
+      <button id="btn-clear-log">清空日志</button>
+      <button id="btn-export-log">导出日志</button>
+      <label class="check"><input type="checkbox" id="chk-autoscroll" checked> 自动滚动</label>
+      <label class="check"><input type="checkbox" id="chk-showraw"> 显示原始字节</label>
+    </div>
+    <div id="report-log" class="log"></div>
+  </section>
+
+  <!-- 原始命令台 -->
+  <section class="card danger" id="card-console" hidden>
+    <h2>协议命令台 <span class="badge red">写操作 · 谨慎</span></h2>
+    <p class="hint">发送协议命令：自动加 reportId 0x04 和 CRC16-MODBUS。格式：<code>命令 长度 偏移 数据…</code>，如 <code>1a</code>（查电量）、<code>05 18 00</code>（读配置块）。</p>
+    <div class="row">
+      <input id="tx-cmd" placeholder="1a" style="width:420px">
+      <button id="btn-send-cmd">发送协议命令</button>
+    </div>
+    <details>
+      <summary>原始模式（手动组包，含 reportId）</summary>
+      <div class="row">
+        <label>ReportID <input id="tx-id" value="4" style="width:60px"></label>
+        <label>数据(hex) <input id="tx-data" placeholder="6b af 1a ..." style="width:340px"></label>
+        <button id="btn-send-output">发送 Output Report</button>
+      </div>
+    </details>
+  </section>
+
+  <!-- 集合信息 -->
+  <section class="card" id="card-info" hidden>
+    <details><summary><h2 style="display:inline">HID 接口详情（调试）</h2></summary>
+      <div id="collections"></div>
+    </details>
+  </section>
+</main>
+
+<footer>
+  <p>纯静态页面 · 数据不离开本机 · 基于 WebHID（Chrome / Edge）· 协议逆向自官方驱动通信</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
+

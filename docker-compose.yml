@@ -1,0 +1,8 @@
+version: '3'
+services:
+  m800-webdriver:
+    build: .
+    container_name: m800-webdriver
+    restart: always
+    ports:
+      - "54777:54777"
