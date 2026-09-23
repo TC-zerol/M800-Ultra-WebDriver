@@ -30,6 +30,17 @@
 
 ## 🚀 快速开始
 
+### 方式零：在线使用（GitHub Pages，推荐）🌐
+
+直接访问 **<https://tc-zerol.github.io/M800-Ultra-WebDriver/>** —— 自带 HTTPS，
+WebHID 开箱即用，无需安装任何东西、无需任何浏览器 flag。
+
+> 本仓库已开启 GitHub Pages。如果你 fork 了本项目，给自己的仓库开启方法：
+> **Settings → Pages → Build and deployment → Source 选 `Deploy from a branch`
+> → Branch 选 `main` / `/ (root)` → Save**。等 1~2 分钟即可通过
+> `https://<你的用户名>.github.io/<仓库名>/` 访问，之后每次 push 到 `main`
+> 分支都会自动更新页面。
+
 ### 方式一：本地运行（最简单）
 
 1. 安装 [Python](https://www.python.org/)（仅用于起静态服务器）
